@@ -1,6 +1,6 @@
+// app.js
 const express = require('express');
 const bodyParser = require('body-parser');
-const { MessagingResponse } = require('twilio');
 const twilio = require('twilio');
 
 const app = express();
@@ -15,6 +15,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 
 // WhatsApp Webhook 路径
 app.post('/whatsapp', (req, res) => {
+  const MessagingResponse = twilio.twiml.MessagingResponse; // ✅ 正确导入方式
   const twiml = new MessagingResponse();
 
   const incomingMsg = req.body.Body || '';
@@ -41,6 +42,11 @@ app.post('/whatsapp', (req, res) => {
 
   res.type('text/xml');
   res.send(twiml.toString());
+});
+
+// 根路径测试（浏览器访问时不再报 Cannot GET /）
+app.get('/', (req, res) => {
+  res.send('✅ WhatsApp bot is running on Render!');
 });
 
 app.listen(port, () => {

@@ -2,7 +2,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const twilio = require('twilio');
-const MessagingResponse = twilio.twiml.MessagingResponse; // ✅ 正确导入方式
+const MessagingResponse = twilio.twiml.MessagingResponse; // ✅ 正确导入
 const fs = require('fs');
 
 const app = express();
@@ -106,7 +106,8 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.post('/whatsapp', (req, res) => {
   const twiml = new MessagingResponse();
   const incomingMsg = req.body.Body || '';
-  const lowerMsg = incomingMsg.toLowerCase();
+  // ✅ 去掉常见标点符号，避免匹配失败
+  const lowerMsg = incomingMsg.toLowerCase().replace(/[?.!,:;]+/g, '').trim();
   let reply = '';
 
   // === FAQ ===
@@ -192,5 +193,6 @@ app.post('/whatsapp', (req, res) => {
 app.listen(port, () => {
   console.log(`✅ Server running on port ${port}`);
 });
+
 
 

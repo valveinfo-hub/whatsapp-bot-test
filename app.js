@@ -74,12 +74,22 @@ app.post('/whatsapp', (req, res) => {
     userPreference = null;
     reply = "🧹 I've forgotten your preference.";
 
-  // === 短期记忆 & 其他逻辑 ===
+  // === FAQ 逻辑 ===
+  } else if (incomingMsg.toLowerCase().includes('price')) {
+    reply = "💲 Our pricing depends on the product type. Please contact sales at sales@alwayflow.com for a quote.";
+
+  } else if (incomingMsg.toLowerCase().includes('catalog')) {
+    reply = "📘 Here is our product catalog: https://example.com/catalog";
+
+  } else if (incomingMsg.toLowerCase().includes('delivery')) {
+    reply = "🚚 Standard delivery time is 7–10 business days, depending on location.";
+
+  // === 其他逻辑 ===
   } else if (incomingMsg.toLowerCase().includes('hello')) {
     reply = `👋 Hi! I remember you said hello!`;
 
   } else if (incomingMsg.toLowerCase().includes('help')) {
-    reply = `ℹ️ You can introduce yourself ("My name is..."), company ("I work at..."), city ("I live in..."), or preference ("I like...").\nYou can also type "memory" to see short-term context.`;
+    reply = `ℹ️ You can introduce yourself ("My name is..."), company ("I work at..."), city ("I live in..."), or preference ("I like...").\nYou can also type "catalog", "price", or "delivery" to get quick info.`;
 
   } else if (incomingMsg.toLowerCase().includes('memory')) {
     let memoryDump = shortTermMemory.map(m => `${m.role}: ${m.msg}`).join('\n');
@@ -92,7 +102,7 @@ app.post('/whatsapp', (req, res) => {
   // 保存到短期记忆
   shortTermMemory.push({ role: 'user', msg: incomingMsg });
   shortTermMemory.push({ role: 'bot', msg: reply });
-  if (shortTermMemory.length > 10) { // 每次对话算2条
+  if (shortTermMemory.length > 10) {
     shortTermMemory.shift();
     shortTermMemory.shift();
   }

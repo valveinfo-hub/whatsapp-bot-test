@@ -7,7 +7,7 @@ const fs = require('fs');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// 从环境变量读取 Twilio 配置
+// Twilio 配置
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const twilioClient = twilio(accountSid, authToken);
@@ -15,13 +15,22 @@ const twilioClient = twilio(accountSid, authToken);
 // 短期记忆
 let shortTermMemory = [];
 
-// 长期记忆
-let userName = null;
-let userCompany = null;
-let userCity = null;
-let userPreference = null;
+// 长期记忆（从 memory.json 读取）
+let memory = {
+  userName: null,
+  userCompany: null,
+  userCity: null,
+  userPreference: null
+};
+try {
+  const data = fs.readFileSync('memory.json', 'utf8');
+  memory = JSON.parse(data);
+  console.log("✅ Memory loaded:", memory);
+} catch (err) {
+  console.error("⚠️ Could not load memory.json, using defaults.");
+}
 
-// ✅ 读取 FAQ 文件
+// FAQ（从 faq.json 读取）
 let faq = {};
 try {
   faq = JSON.parse(fs.readFileSync('faq.json', 'utf8'));
@@ -29,7 +38,7 @@ try {
   console.error("⚠️ Could not load faq.json:", err);
 }
 
-// ✅ 拼写错误映射表
+// 拼写纠正表
 const typoMap = {
   "prise": "price",
   "prize": "price",
@@ -39,18 +48,13 @@ const typoMap = {
   "dilivery": "delivery"
 };
 
-// ✅ 简单模糊匹配函数
+// 模糊匹配
 function findClosestMatch(input, faqKeys) {
   input = input.toLowerCase();
-
-  // 先检查是否在 typoMap 里
-  if (typoMap[input]) {
-    return typoMap[input];
-  }
+  if (typoMap[input]) return typoMap[input];
 
   let bestMatch = null;
   let bestDistance = Infinity;
-
   for (const key of faqKeys) {
     let distance = levenshtein(input, key);
     if (distance < bestDistance) {
@@ -58,11 +62,10 @@ function findClosestMatch(input, faqKeys) {
       bestMatch = key;
     }
   }
-  // 允许容错距离 2
   return bestDistance <= 2 ? bestMatch : null;
 }
 
-// ✅ Levenshtein 距离算法
+// Levenshtein 距离
 function levenshtein(a, b) {
   const matrix = [];
   const lenA = a.length;
@@ -84,8 +87,17 @@ function levenshtein(a, b) {
       }
     }
   }
-
   return matrix[lenB][lenA];
+}
+
+// 保存 memory.json
+function saveMemory() {
+  try {
+    fs.writeFileSync('memory.json', JSON.stringify(memory, null, 2));
+    console.log("💾 Memory saved:", memory);
+  } catch (err) {
+    console.error("❌ Failed to save memory.json:", err);
+  }
 }
 
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -97,55 +109,63 @@ app.post('/whatsapp', (req, res) => {
   const lowerMsg = incomingMsg.toLowerCase();
   let reply = '';
 
-  // === FAQ 逻辑（支持拼写纠正 + 模糊匹配） ===
+  // === FAQ ===
   let faqKeys = Object.keys(faq);
   let matchedKey = faq[lowerMsg] ? lowerMsg : findClosestMatch(lowerMsg, faqKeys);
   if (matchedKey && faq[matchedKey]) {
     reply = faq[matchedKey];
 
-  // === 长期记忆逻辑 ===
+  // === 持久化记忆 ===
   } else if (lowerMsg.startsWith("my name is")) {
-    userName = incomingMsg.substring(10).trim();
-    reply = `👌 Nice to meet you, ${userName}! I'll remember your name.`;
+    memory.userName = incomingMsg.substring(10).trim();
+    saveMemory();
+    reply = `👌 Nice to meet you, ${memory.userName}! I'll remember your name.`;
 
   } else if (lowerMsg.includes("what is my name")) {
-    reply = userName ? `🧠 Your name is ${userName}.` : "❓ I don't know your name yet.";
+    reply = memory.userName ? `🧠 Your name is ${memory.userName}.` : "❓ I don't know your name yet.";
 
   } else if (lowerMsg.startsWith("i work at")) {
-    userCompany = incomingMsg.substring(10).trim();
-    reply = `💼 Got it, you work at ${userCompany}.`;
+    memory.userCompany = incomingMsg.substring(10).trim();
+    saveMemory();
+    reply = `💼 Got it, you work at ${memory.userCompany}.`;
 
   } else if (lowerMsg.includes("what company")) {
-    reply = userCompany ? `🧠 You work at ${userCompany}.` : "❓ I don't know your company yet.";
+    reply = memory.userCompany ? `🧠 You work at ${memory.userCompany}.` : "❓ I don't know your company yet.";
 
   } else if (lowerMsg.startsWith("i live in")) {
-    userCity = incomingMsg.substring(10).trim();
-    reply = `📍 Okay, you live in ${userCity}.`;
+    memory.userCity = incomingMsg.substring(10).trim();
+    saveMemory();
+    reply = `📍 Okay, you live in ${memory.userCity}.`;
 
   } else if (lowerMsg.includes("where do i live")) {
-    reply = userCity ? `🧠 You live in ${userCity}.` : "❓ I don't know where you live yet.";
+    reply = memory.userCity ? `🧠 You live in ${memory.userCity}.` : "❓ I don't know where you live yet.";
 
   } else if (lowerMsg.startsWith("i like")) {
-    userPreference = incomingMsg.substring(6).trim();
-    reply = `⭐ Nice! I'll remember that you like ${userPreference}.`;
+    memory.userPreference = incomingMsg.substring(6).trim();
+    saveMemory();
+    reply = `⭐ Nice! I'll remember that you like ${memory.userPreference}.`;
 
   } else if (lowerMsg.includes("what do i like")) {
-    reply = userPreference ? `🧠 You like ${userPreference}.` : "❓ I don't know your preference yet.";
+    reply = memory.userPreference ? `🧠 You like ${memory.userPreference}.` : "❓ I don't know your preference yet.";
 
   } else if (lowerMsg.includes("forget my name")) {
-    userName = null;
+    memory.userName = null;
+    saveMemory();
     reply = "🧹 I've forgotten your name.";
 
   } else if (lowerMsg.includes("forget company")) {
-    userCompany = null;
+    memory.userCompany = null;
+    saveMemory();
     reply = "🧹 I've forgotten your company.";
 
   } else if (lowerMsg.includes("forget city")) {
-    userCity = null;
+    memory.userCity = null;
+    saveMemory();
     reply = "🧹 I've forgotten your city.";
 
   } else if (lowerMsg.includes("forget preference")) {
-    userPreference = null;
+    memory.userPreference = null;
+    saveMemory();
     reply = "🧹 I've forgotten your preference.";
 
   // === 其他逻辑 ===
@@ -156,7 +176,7 @@ app.post('/whatsapp', (req, res) => {
     reply = `You said: "${incomingMsg}"\n\nI am your Render-deployed Twilio bot 🚀`;
   }
 
-  // 保存到短期记忆
+  // 短期记忆
   shortTermMemory.push({ role: 'user', msg: incomingMsg });
   shortTermMemory.push({ role: 'bot', msg: reply });
   if (shortTermMemory.length > 10) {
@@ -172,3 +192,4 @@ app.post('/whatsapp', (req, res) => {
 app.listen(port, () => {
   console.log(`✅ Server running on port ${port}`);
 });
+

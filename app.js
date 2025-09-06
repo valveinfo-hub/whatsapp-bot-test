@@ -2,7 +2,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const twilio = require('twilio');
-const MessagingResponse = twilio.twiml.MessagingResponse; // ✅ 正确导入
+const MessagingResponse = twilio.twiml.MessagingResponse;
 const fs = require('fs');
 
 const app = express();
@@ -17,12 +17,7 @@ const twilioClient = twilio(accountSid, authToken);
 let shortTermMemory = [];
 
 // 长期记忆（从 memory.json 读取）
-let memory = {
-  userName: null,
-  userCompany: null,
-  userCity: null,
-  userPreference: null
-};
+let memory = { userName: null, userCompany: null, userCity: null, userPreference: null };
 try {
   const data = fs.readFileSync('memory.json', 'utf8');
   memory = JSON.parse(data);
@@ -49,32 +44,13 @@ const typoMap = {
   "dilivery": "delivery"
 };
 
-// 模糊匹配
-function findClosestMatch(input, faqKeys) {
-  input = input.toLowerCase();
-  if (typoMap[input]) return typoMap[input];
-
-  let bestMatch = null;
-  let bestDistance = Infinity;
-  for (const key of faqKeys) {
-    let distance = levenshtein(input, key);
-    if (distance < bestDistance) {
-      bestDistance = distance;
-      bestMatch = key;
-    }
-  }
-  return bestDistance <= 2 ? bestMatch : null;
-}
-
 // Levenshtein 距离
 function levenshtein(a, b) {
   const matrix = [];
   const lenA = a.length;
   const lenB = b.length;
-
   for (let i = 0; i <= lenB; i++) matrix[i] = [i];
   for (let j = 0; j <= lenA; j++) matrix[0][j] = j;
-
   for (let i = 1; i <= lenB; i++) {
     for (let j = 1; j <= lenA; j++) {
       if (b.charAt(i - 1) === a.charAt(j - 1)) {
@@ -89,6 +65,23 @@ function levenshtein(a, b) {
     }
   }
   return matrix[lenB][lenA];
+}
+
+// 模糊匹配
+function findClosestMatch(input, faqKeys) {
+  input = input.toLowerCase();
+  if (typoMap[input]) return typoMap[input]; // 先查表
+
+  let bestMatch = null;
+  let bestDistance = Infinity;
+  for (const key of faqKeys) {
+    let distance = levenshtein(input, key);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestMatch = key;
+    }
+  }
+  return bestDistance <= 2 ? bestMatch : null; // 容错 2 个字符
 }
 
 // 保存 memory.json
@@ -106,73 +99,77 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.post('/whatsapp', (req, res) => {
   const twiml = new MessagingResponse();
   const incomingMsg = req.body.Body || '';
-  // ✅ 去掉常见标点符号，避免匹配失败
-  const lowerMsg = incomingMsg.toLowerCase().replace(/[?.!,:;]+/g, '').trim();
+
+  // ✅ 清理输入（小写 + 去标点 + 去空格）
+  const normalizedMsg = incomingMsg
+    .toLowerCase()
+    .replace(/[?.!,:;]+/g, '')
+    .trim();
+
   let reply = '';
 
   // === FAQ ===
   let faqKeys = Object.keys(faq);
-  let matchedKey = faq[lowerMsg] ? lowerMsg : findClosestMatch(lowerMsg, faqKeys);
+  let matchedKey = faq[normalizedMsg] ? normalizedMsg : findClosestMatch(normalizedMsg, faqKeys);
   if (matchedKey && faq[matchedKey]) {
     reply = faq[matchedKey];
 
   // === 持久化记忆 ===
-  } else if (lowerMsg.startsWith("my name is")) {
+  } else if (normalizedMsg.startsWith("my name is")) {
     memory.userName = incomingMsg.substring(10).trim();
     saveMemory();
     reply = `👌 Nice to meet you, ${memory.userName}! I'll remember your name.`;
 
-  } else if (lowerMsg.includes("what is my name")) {
+  } else if (normalizedMsg.includes("what is my name")) {
     reply = memory.userName ? `🧠 Your name is ${memory.userName}.` : "❓ I don't know your name yet.";
 
-  } else if (lowerMsg.startsWith("i work at")) {
+  } else if (normalizedMsg.startsWith("i work at")) {
     memory.userCompany = incomingMsg.substring(10).trim();
     saveMemory();
     reply = `💼 Got it, you work at ${memory.userCompany}.`;
 
-  } else if (lowerMsg.includes("what company")) {
+  } else if (normalizedMsg.includes("what company")) {
     reply = memory.userCompany ? `🧠 You work at ${memory.userCompany}.` : "❓ I don't know your company yet.";
 
-  } else if (lowerMsg.startsWith("i live in")) {
+  } else if (normalizedMsg.startsWith("i live in")) {
     memory.userCity = incomingMsg.substring(10).trim();
     saveMemory();
     reply = `📍 Okay, you live in ${memory.userCity}.`;
 
-  } else if (lowerMsg.includes("where do i live")) {
+  } else if (normalizedMsg.includes("where do i live")) {
     reply = memory.userCity ? `🧠 You live in ${memory.userCity}.` : "❓ I don't know where you live yet.";
 
-  } else if (lowerMsg.startsWith("i like")) {
+  } else if (normalizedMsg.startsWith("i like")) {
     memory.userPreference = incomingMsg.substring(6).trim();
     saveMemory();
     reply = `⭐ Nice! I'll remember that you like ${memory.userPreference}.`;
 
-  } else if (lowerMsg.includes("what do i like")) {
+  } else if (normalizedMsg.includes("what do i like")) {
     reply = memory.userPreference ? `🧠 You like ${memory.userPreference}.` : "❓ I don't know your preference yet.";
 
-  } else if (lowerMsg.includes("forget my name")) {
+  } else if (normalizedMsg.includes("forget my name")) {
     memory.userName = null;
     saveMemory();
     reply = "🧹 I've forgotten your name.";
 
-  } else if (lowerMsg.includes("forget company")) {
+  } else if (normalizedMsg.includes("forget company")) {
     memory.userCompany = null;
     saveMemory();
     reply = "🧹 I've forgotten your company.";
 
-  } else if (lowerMsg.includes("forget city")) {
+  } else if (normalizedMsg.includes("forget city")) {
     memory.userCity = null;
     saveMemory();
     reply = "🧹 I've forgotten your city.";
 
-  } else if (lowerMsg.includes("forget preference")) {
+  } else if (normalizedMsg.includes("forget preference")) {
     memory.userPreference = null;
     saveMemory();
     reply = "🧹 I've forgotten your preference.";
 
-  // === 其他逻辑 ===
-  } else if (lowerMsg.includes("help")) {
+  // === 兜底 ===
+  } else if (normalizedMsg.includes("help")) {
     reply = "ℹ️ You can ask about 'price', 'catalog', 'delivery', 'support' or introduce yourself.";
-
   } else {
     reply = `You said: "${incomingMsg}"\n\nI am your Render-deployed Twilio bot 🚀`;
   }

@@ -1,4 +1,5 @@
 {
+  "hello": "👋 Hi! Thanks for messaging our WhatsApp bot on Render!",
   "price": "💲 Our pricing depends on the product type. Please contact sales@alwayflow.com for a quote.",
   "catalog": "📘 Here is our product catalog: https://example.com/catalog",
   "delivery": "🚚 Standard delivery time is 7–10 business days, depending on location.",
@@ -10,3 +11,4 @@
   "shipping": "✈️ We ship worldwide. Standard delivery is 7–10 business days, expedited shipping is available upon request.",
   "contact": "📧 You can reach us at info@alwayflow.com or call +1-800-123-4567."
 }
+

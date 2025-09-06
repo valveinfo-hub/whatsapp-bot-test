@@ -2,6 +2,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const twilio = require('twilio');
+const MessagingResponse = twilio.twiml.MessagingResponse; // ✅ 正确导入方式
 const fs = require('fs');
 
 const app = express();
@@ -103,7 +104,6 @@ function saveMemory() {
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.post('/whatsapp', (req, res) => {
-  const MessagingResponse = twilio.twiml.MessagingResponse;
   const twiml = new MessagingResponse();
   const incomingMsg = req.body.Body || '';
   const lowerMsg = incomingMsg.toLowerCase();
@@ -192,4 +192,5 @@ app.post('/whatsapp', (req, res) => {
 app.listen(port, () => {
   console.log(`✅ Server running on port ${port}`);
 });
+
 

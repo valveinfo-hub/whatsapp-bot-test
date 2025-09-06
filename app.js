@@ -100,10 +100,10 @@ app.post('/whatsapp', (req, res) => {
   const twiml = new MessagingResponse();
   const incomingMsg = req.body.Body || '';
 
-  // ✅ 清理输入（小写 + 去标点 + 去空格）
+  // ✅ 清理输入（小写 + 去中英文标点 + 去空格）
   const normalizedMsg = incomingMsg
     .toLowerCase()
-    .replace(/[?.!,:;]+/g, '')
+    .replace(/[?.!,:;？！。，、；：]+/g, '')
     .trim();
 
   let reply = '';
@@ -173,6 +173,9 @@ app.post('/whatsapp', (req, res) => {
   } else {
     reply = `You said: "${incomingMsg}"\n\nI am your Render-deployed Twilio bot 🚀`;
   }
+
+  // 调试打印日志
+  console.log("📩 Incoming:", incomingMsg, "| Normalized:", normalizedMsg, "| Reply:", reply);
 
   // 短期记忆
   shortTermMemory.push({ role: 'user', msg: incomingMsg });

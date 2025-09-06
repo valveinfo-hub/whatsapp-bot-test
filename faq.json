@@ -2,5 +2,11 @@
   "price": "💲 Our pricing depends on the product type. Please contact sales@alwayflow.com for a quote.",
   "catalog": "📘 Here is our product catalog: https://example.com/catalog",
   "delivery": "🚚 Standard delivery time is 7–10 business days, depending on location.",
-  "support": "☎️ For support, please call +1-800-123-4567."
+  "support": "☎️ For support, please call +1-800-123-4567.",
+  "payment": "💳 We accept bank transfer, credit card, and PayPal.",
+  "return": "↩️ Products can be returned within 30 days in original condition.",
+  "warranty": "🛡️ All products come with a 12-month warranty covering manufacturing defects.",
+  "material": "🔩 Our fittings and valves are made from 304/316 stainless steel, suitable for high-pressure and corrosive environments.",
+  "shipping": "✈️ We ship worldwide. Standard delivery is 7–10 business days, expedited shipping is available upon request.",
+  "contact": "📧 You can reach us at info@alwayflow.com or call +1-800-123-4567."
 }

@@ -29,9 +29,25 @@ try {
   console.error("⚠️ Could not load faq.json:", err);
 }
 
-// ✅ 简单模糊匹配函数（Levenshtein 距离近似）
+// ✅ 拼写错误映射表
+const typoMap = {
+  "prise": "price",
+  "prize": "price",
+  "catelog": "catalog",
+  "catalouge": "catalog",
+  "delievery": "delivery",
+  "dilivery": "delivery"
+};
+
+// ✅ 简单模糊匹配函数
 function findClosestMatch(input, faqKeys) {
   input = input.toLowerCase();
+
+  // 先检查是否在 typoMap 里
+  if (typoMap[input]) {
+    return typoMap[input];
+  }
+
   let bestMatch = null;
   let bestDistance = Infinity;
 
@@ -42,7 +58,7 @@ function findClosestMatch(input, faqKeys) {
       bestMatch = key;
     }
   }
-  // 允许容错距离 2（比如 delivery ↔ delievery）
+  // 允许容错距离 2
   return bestDistance <= 2 ? bestMatch : null;
 }
 
@@ -52,12 +68,8 @@ function levenshtein(a, b) {
   const lenA = a.length;
   const lenB = b.length;
 
-  for (let i = 0; i <= lenB; i++) {
-    matrix[i] = [i];
-  }
-  for (let j = 0; j <= lenA; j++) {
-    matrix[0][j] = j;
-  }
+  for (let i = 0; i <= lenB; i++) matrix[i] = [i];
+  for (let j = 0; j <= lenA; j++) matrix[0][j] = j;
 
   for (let i = 1; i <= lenB; i++) {
     for (let j = 1; j <= lenA; j++) {
@@ -65,9 +77,9 @@ function levenshtein(a, b) {
         matrix[i][j] = matrix[i - 1][j - 1];
       } else {
         matrix[i][j] = Math.min(
-          matrix[i - 1][j - 1] + 1, // 替换
-          matrix[i][j - 1] + 1,     // 插入
-          matrix[i - 1][j] + 1      // 删除
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
         );
       }
     }
@@ -85,7 +97,7 @@ app.post('/whatsapp', (req, res) => {
   const lowerMsg = incomingMsg.toLowerCase();
   let reply = '';
 
-  // === FAQ 逻辑（支持模糊匹配） ===
+  // === FAQ 逻辑（支持拼写纠正 + 模糊匹配） ===
   let faqKeys = Object.keys(faq);
   let matchedKey = faq[lowerMsg] ? lowerMsg : findClosestMatch(lowerMsg, faqKeys);
   if (matchedKey && faq[matchedKey]) {

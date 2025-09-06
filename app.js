@@ -2,7 +2,7 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const twilio = require('twilio');
-const fs = require('fs');  // ✅ 新增，用来读取 JSON
+const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -29,6 +29,53 @@ try {
   console.error("⚠️ Could not load faq.json:", err);
 }
 
+// ✅ 简单模糊匹配函数（Levenshtein 距离近似）
+function findClosestMatch(input, faqKeys) {
+  input = input.toLowerCase();
+  let bestMatch = null;
+  let bestDistance = Infinity;
+
+  for (const key of faqKeys) {
+    let distance = levenshtein(input, key);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestMatch = key;
+    }
+  }
+  // 允许容错距离 2（比如 delivery ↔ delievery）
+  return bestDistance <= 2 ? bestMatch : null;
+}
+
+// ✅ Levenshtein 距离算法
+function levenshtein(a, b) {
+  const matrix = [];
+  const lenA = a.length;
+  const lenB = b.length;
+
+  for (let i = 0; i <= lenB; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= lenA; j++) {
+    matrix[0][j] = j;
+  }
+
+  for (let i = 1; i <= lenB; i++) {
+    for (let j = 1; j <= lenA; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // 替换
+          matrix[i][j - 1] + 1,     // 插入
+          matrix[i - 1][j] + 1      // 删除
+        );
+      }
+    }
+  }
+
+  return matrix[lenB][lenA];
+}
+
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.post('/whatsapp', (req, res) => {
@@ -38,9 +85,11 @@ app.post('/whatsapp', (req, res) => {
   const lowerMsg = incomingMsg.toLowerCase();
   let reply = '';
 
-  // === FAQ 逻辑 ===
-  if (faq[lowerMsg]) {
-    reply = faq[lowerMsg];
+  // === FAQ 逻辑（支持模糊匹配） ===
+  let faqKeys = Object.keys(faq);
+  let matchedKey = faq[lowerMsg] ? lowerMsg : findClosestMatch(lowerMsg, faqKeys);
+  if (matchedKey && faq[matchedKey]) {
+    reply = faq[matchedKey];
 
   // === 长期记忆逻辑 ===
   } else if (lowerMsg.startsWith("my name is")) {

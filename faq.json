@@ -1,14 +1,23 @@
 {
   "hello": "👋 Hi! Thanks for messaging our WhatsApp bot on Render!",
+  "hi": "👋 Hello there! How can I help you today?",
+  "good morning": "🌞 Good morning! Hope you have a great day!",
+  "good night": "🌙 Good night! Rest well.",
+  "who are you": "🤖 I am your Digital Intelligent Agent, here to assist with products and services.",
+  
   "price": "💲 Our pricing depends on the product type. Please contact sales@alwayflow.com for a quote.",
   "catalog": "📘 Here is our product catalog: https://example.com/catalog",
   "delivery": "🚚 Standard delivery time is 7–10 business days, depending on location.",
-  "support": "☎️ For support, please call +1-800-123-4567.",
+  "shipping": "✈️ We ship worldwide. Standard delivery is 7–10 business days, expedited shipping is available upon request.",
   "payment": "💳 We accept bank transfer, credit card, and PayPal.",
   "return": "↩️ Products can be returned within 30 days in original condition.",
   "warranty": "🛡️ All products come with a 12-month warranty covering manufacturing defects.",
   "material": "🔩 Our fittings and valves are made from 304/316 stainless steel, suitable for high-pressure and corrosive environments.",
-  "shipping": "✈️ We ship worldwide. Standard delivery is 7–10 business days, expedited shipping is available upon request.",
-  "contact": "📧 You can reach us at info@alwayflow.com or call +1-800-123-4567."
-}
+  "moq": "📦 Our minimum order quantity (MOQ) depends on the product type, usually 50–100 pcs.",
+  "packaging": "📦 Products are packed in cartons with protective materials. Custom packaging is available on request.",
 
+  "support": "☎️ For support, please call +1-800-123-4567.",
+  "contact": "📧 You can reach us at info@alwayflow.com or call +1-800-123-4567.",
+  "location": "🏢 Our office is located in Richmond, BC, Canada.",
+  "hours": "⏰ Our working hours are Monday–Friday, 9 AM–6 PM (PST)."
+}
